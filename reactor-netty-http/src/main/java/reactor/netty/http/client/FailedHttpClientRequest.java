@@ -23,7 +23,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import reactor.netty.http.Cookies;
-import reactor.netty.http.HttpOperations;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -45,9 +44,8 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 	final HttpHeaders         headers;
 	final boolean             isWebsocket;
 	final HttpMethod          method;
-	final String              path;
 	final Duration            responseTimeout;
-	final String              uri;
+	final UriEndpoint         uriEndpoint;
 
 	FailedHttpClientRequest(ContextView contextView, HttpClientConfig c) {
 		this.contextView = contextView;
@@ -55,8 +53,7 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 		this.headers = c.headers;
 		this.isWebsocket = c.websocketClientSpec != null;
 		this.method = c.method;
-		this.uri = c.uri == null ? c.uriStr : c.uri.toString();
-		this.path = this.uri != null ? HttpOperations.resolvePath(this.uri) : null;
+		this.uriEndpoint = UriEndpoint.fromConfig(c);
 		this.responseTimeout = c.responseTimeout;
 	}
 
@@ -89,7 +86,7 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 
 	@Override
 	public String fullPath() {
-		return path;
+		return uriEndpoint.getPath();
 	}
 
 	@Override
@@ -144,12 +141,12 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 
 	@Override
 	public String resourceUrl() {
-		return null;
+		return uriEndpoint.toExternalForm();
 	}
 
 	@Override
 	public String uri() {
-		return uri;
+		return uriEndpoint.getRawPathAndQuery();
 	}
 
 	@Override
