@@ -53,7 +53,7 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 		this.headers = c.headers;
 		this.isWebsocket = c.websocketClientSpec != null;
 		this.method = c.method;
-		this.uriEndpoint = UriEndpoint.fromConfig(c);
+		this.uriEndpoint = UriEndpoint.create(c.uri, c.baseUrl, c.uriStr, c.remoteAddress(), c.isSecure(), c.websocketClientSpec != null);
 		this.responseTimeout = c.responseTimeout;
 	}
 

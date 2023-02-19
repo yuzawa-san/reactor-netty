@@ -481,7 +481,7 @@ class HttpClientConnect extends HttpClient {
 			this.websocketClientSpec = configuration.websocketClientSpec;
 			this.shouldRetry = !configuration.retryDisabled;
 			this.handler = configuration.body;
-			this.toURI = UriEndpoint.fromConfig(configuration);
+			this.toURI = UriEndpoint.create(configuration.uri, configuration.baseUrl, configuration.uriStr, configuration.remoteAddress(), configuration.isSecure(), configuration.websocketClientSpec != null);
 		}
 
 		@Override

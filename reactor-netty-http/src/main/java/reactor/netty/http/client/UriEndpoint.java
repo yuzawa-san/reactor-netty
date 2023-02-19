@@ -45,7 +45,7 @@ final class UriEndpoint {
 			throw new IllegalArgumentException("URI is not absolute: " + uri);
 		}
 		if (uri.getHost() == null) {
-			throw new IllegalArgumentException("URI is not absolute: " + uri);
+			throw new IllegalArgumentException("Host is not specified");
 		}
 		this.scheme = uri.getScheme().toLowerCase();
 		if (remoteAddress == null) {
@@ -56,32 +56,31 @@ final class UriEndpoint {
 		else {
 			this.remoteAddress = remoteAddress;
 		}
-		System.out.println(uri + " " + this.remoteAddress + " " + toExternalForm());
 	}
 
-	static UriEndpoint fromConfig(HttpClientConfig config) {
-		return fromConfig(config.uri, config.uriStr, config.baseUrl, config.remoteAddress(), config.isSecure(), config.websocketClientSpec != null);
-	}
-
-	static UriEndpoint fromConfig(URI uri, String uriStr, String baseUrl, Supplier<? extends SocketAddress> remoteAddress, boolean secure, boolean ws) {
+	static UriEndpoint create(URI uri, String baseUrl, String uriStr, Supplier<? extends SocketAddress> remoteAddress, boolean secure, boolean ws) {
 		if (uri != null) {
 			return new UriEndpoint(uri);
 		}
-		uriStr = uriStr == null ? ROOT_PATH : uriStr;
+		if (uriStr == null) {
+			uriStr = ROOT_PATH;
+		}
 		if (baseUrl != null && uriStr.startsWith(ROOT_PATH)) {
+			// support prepending a baseUrl
 			if (baseUrl.endsWith(ROOT_PATH)) {
+				// trim off trailing slash to avoid a double slash when appending uriStr
 				baseUrl = baseUrl.substring(0, baseUrl.length() - ROOT_PATH.length());
 			}
 			uriStr = baseUrl + uriStr;
 		}
 		if (uriStr.startsWith(ROOT_PATH)) {
-			// relative path
+			// support "/path" base by prepending scheme and host
 			SocketAddress socketAddress = remoteAddress.get();
 			uriStr = resolveScheme(secure, ws) + "://" + toSocketAddressStringWithoutDefaultPort(socketAddress, secure) + uriStr;
 			return new UriEndpoint(URI.create(uriStr), socketAddress);
 		}
 		if (!SCHEME_PATTERN.matcher(uriStr).matches()) {
-			// support "example.com/path" case
+			// support "example.com/path" case by prepending scheme
 			uriStr = resolveScheme(secure, ws) + "://" + uriStr;
 		}
 		return new UriEndpoint(URI.create(uriStr));

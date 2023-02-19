@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class UriEndpointFactoryTest {
-	private final Builder builder = new Builder();
+	private final UriEndpointFactoryBuilder builder = new UriEndpointFactoryBuilder();
 
 	@Test
 	void shouldParseUrls_1() throws Exception {
@@ -335,7 +335,7 @@ class UriEndpointFactoryTest {
 		assertThat(test4).isEqualTo("wss://localhost/foo");
 	}
 
-	private static String externalForm(Builder.Factory factory, String url, boolean useUri) throws Exception {
+	private static String externalForm(UriEndpointFactoryBuilder.UriEndpointFactory factory, String url, boolean useUri) throws Exception {
 		if (useUri) {
 			return factory.createUriEndpoint(new URI(url))
 			              .toExternalForm();
@@ -346,52 +346,52 @@ class UriEndpointFactoryTest {
 		}
 	}
 
-	private static final class Builder {
+	private static final class UriEndpointFactoryBuilder {
 		private boolean secure;
 		private String host = "localhost";
 		private int port = -1;
 		private String baseUrl;
 		private boolean isWs;
 
-		public Factory build() {
-			return new Factory();
+		public UriEndpointFactory build() {
+			return new UriEndpointFactory();
 		}
 
-		private  final class Factory {
+		private  final class UriEndpointFactory {
 			InetSocketAddress remoteAddress() {
 				return InetSocketAddress.createUnresolved(host, port != -1 ? port : (secure ? 443 : 80));
 			}
 
 			UriEndpoint createUriEndpoint(String uri) {
-				return UriEndpoint.fromConfig(null, uri, baseUrl, this::remoteAddress, secure, isWs);
+				return UriEndpoint.create(null, baseUrl, uri, this::remoteAddress, secure, isWs);
 			}
 
 			UriEndpoint createUriEndpoint(URI uri) {
-				return UriEndpoint.fromConfig(uri, null, null, this::remoteAddress, secure, isWs);
+				return UriEndpoint.create(uri, baseUrl, null, this::remoteAddress, secure, isWs);
 			}
 		}
 
-		public Builder baseUrl(String baseUrl) {
+		public UriEndpointFactoryBuilder baseUrl(String baseUrl) {
 			this.baseUrl = baseUrl;
 			return this;
 		}
 
-		public Builder webSocket(boolean isWs) {
+		public UriEndpointFactoryBuilder webSocket(boolean isWs) {
 			this.isWs = isWs;
 			return this;
 		}
 
-		public Builder sslSupport() {
+		public UriEndpointFactoryBuilder sslSupport() {
 			this.secure = true;
 			return this;
 		}
 
-		public Builder host(String host) {
+		public UriEndpointFactoryBuilder host(String host) {
 			this.host = host;
 			return this;
 		}
 
-		public Builder port(int port) {
+		public UriEndpointFactoryBuilder port(int port) {
 			this.port = port;
 			return this;
 		}
