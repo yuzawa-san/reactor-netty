@@ -15,8 +15,10 @@
  */
 package reactor.netty.http.client;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -134,6 +136,108 @@ class UriEndpointFactoryTest {
 		for (String[] input : inputs) {
 			assertThat(externalForm(this.builder.baseUrl("https://example.com/").build(), input[0], true)).isEqualTo(input[1]);
 		}
+	}
+
+	@Test
+	void createUriEndpointFqdn_1() {
+		UriEndpoint endpoint = this.builder.host("example.com").build()
+				.createUriEndpoint("/path%20example?key=value#fragment");
+
+		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 80));
+	}
+
+	@Test
+	void createUriEndpointFqdn_2() {
+		UriEndpoint endpoint = this.builder.host("example.com").port(8080).build()
+				.createUriEndpoint("/path%20example?key=value#fragment");
+
+		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com:8080/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com:8080");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 8080));
+	}
+	
+	@Test
+	void createUriEndpointFqdn_3() {
+		UriEndpoint endpoint = this.builder.build()
+				.createUriEndpoint("http://example.com:8080/path%20example?key=value#fragment");
+
+		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com:8080/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com:8080");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 8080));
+	}
+
+	@Test
+	void createUriEndpointIpv4() {
+		UriEndpoint endpoint = this.builder.host("127.0.0.1").port(8080).build()
+				.createUriEndpoint("/path%20example?key=value#fragment");
+
+		assertThat(endpoint.toExternalForm()).isEqualTo("http://127.0.0.1:8080/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("127.0.0.1:8080");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("127.0.0.1", 8080));
+	}
+
+	@Test
+	void createUriEndpointIpv6() throws UnknownHostException {
+		UriEndpoint endpoint = this.builder.host("::1").port(8080).build()
+				.createUriEndpoint("/path%20example?key=value#fragment");
+
+		assertThat(endpoint.toExternalForm()).isEqualTo("http://[::1]:8080/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("[::1]:8080");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("::1", 8080));
+	}
+
+	@Test
+	void createUriEndpointRedirectAbsolute() throws UnknownHostException {
+		UriEndpoint endpoint = this.builder.build()
+				.createUriEndpoint("https://source.example.com/foo/bar");
+
+		endpoint = endpoint.redirect("https://example.com/path%20example?key=value#fragment");
+		
+		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
+	}
+	
+	@Test
+	void createUriEndpointRedirectRelative() throws UnknownHostException {
+		UriEndpoint endpoint = this.builder.build()
+				.createUriEndpoint("https://example.com/");
+
+		endpoint = endpoint.redirect("/path%20example?key=value#fragment");
+		
+		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
+	}
+	
+	@Test
+	void createUriEndpointRedirectRelativeSubpath() throws UnknownHostException {
+		UriEndpoint endpoint = this.builder.build()
+				.createUriEndpoint("https://example.com/subpath/");
+
+		endpoint = endpoint.redirect("path%20example?key=value#fragment");
+		
+		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/subpath/path%20example?key=value");
+		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
+		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/subpath/path%20example?key=value");
+		assertThat(endpoint.getPath()).isEqualTo("/subpath/path example");
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
 	}
 
 	@Test
