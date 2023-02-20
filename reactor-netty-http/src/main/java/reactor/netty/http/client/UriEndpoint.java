@@ -15,6 +15,8 @@
  */
 package reactor.netty.http.client;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -23,17 +25,22 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.NetUtil;
 import reactor.netty.transport.AddressUtils;
+import static reactor.netty.http.client.HttpClient.DEFAULT_PORT;
+import static reactor.netty.http.client.HttpClient.DEFAULT_SECURE_PORT;
 
 final class UriEndpoint {
-	static final Pattern SCHEME_PATTERN = Pattern.compile("^\\w+://.*$");
-	static final String ROOT_PATH = "/";
+	private static final Pattern SCHEME_PATTERN = Pattern.compile("^\\w+://.*$");
+	private static final String ROOT_PATH = "/";
+	private static final String COLON_DOUBLE_SLASH = "://";
 
-	final SocketAddress remoteAddress;
-	final URI uri;
-	final String scheme;
+	private final SocketAddress remoteAddress;
+	private final URI uri;
+	private final String scheme;
+	private final boolean secure;
+	private final String authority;
+	private final String rawUri;
 
 	private UriEndpoint(URI uri) {
 		this(uri, null);
@@ -48,10 +55,12 @@ final class UriEndpoint {
 			throw new IllegalArgumentException("Host is not specified");
 		}
 		this.scheme = uri.getScheme().toLowerCase();
+		this.secure = isSecureScheme(scheme);
+		this.authority = authority(uri);
+		this.rawUri = rawUri(uri);
 		if (remoteAddress == null) {
-			String host = cleanHostString(uri.getHost());
-			int port = uri.getPort() != -1 ? uri.getPort() : (isSecureScheme(scheme) ? 443 : 80);
-			this.remoteAddress = AddressUtils.createUnresolved(host, port);
+			int port = uri.getPort() != -1 ? uri.getPort() : (secure ? DEFAULT_SECURE_PORT : DEFAULT_PORT);
+			this.remoteAddress = AddressUtils.createUnresolved(uri.getHost(), port);
 		}
 		else {
 			this.remoteAddress = remoteAddress;
@@ -77,14 +86,71 @@ final class UriEndpoint {
 		if (uriStr.startsWith(ROOT_PATH)) {
 			// support "/path" base by prepending scheme and host
 			SocketAddress socketAddress = remoteAddress.get();
-			uriStr = resolveScheme(secure, ws) + "://" + toSocketAddressStringWithoutDefaultPort(socketAddress, secure) + uriStr;
+			uriStr = resolveScheme(secure, ws) + COLON_DOUBLE_SLASH + socketAddressToAuthority(socketAddress, secure) + uriStr;
 			return new UriEndpoint(URI.create(uriStr), socketAddress);
 		}
 		if (!SCHEME_PATTERN.matcher(uriStr).matches()) {
 			// support "example.com/path" case by prepending scheme
-			uriStr = resolveScheme(secure, ws) + "://" + uriStr;
+			uriStr = resolveScheme(secure, ws) + COLON_DOUBLE_SLASH + uriStr;
 		}
 		return new UriEndpoint(URI.create(uriStr));
+	}
+
+	private static String socketAddressToAuthority(SocketAddress socketAddress, boolean secure) {
+		if (!(socketAddress instanceof InetSocketAddress)) {
+			return "localhost";
+		}
+		InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+		String host;
+		if (inetSocketAddress.isUnresolved()) {
+			host = NetUtil.getHostname(inetSocketAddress);
+		}
+		else {
+			InetAddress inetAddress = inetSocketAddress.getAddress();
+			host = NetUtil.toAddressString(inetAddress);
+			if (inetAddress instanceof Inet6Address) {
+				host = '[' + host + ']';
+			}
+		}
+		int port = inetSocketAddress.getPort();
+		if ((!secure && port != DEFAULT_PORT) || (secure && port != DEFAULT_SECURE_PORT)) {
+			return host + ':' + port;
+		}
+		return host;
+	}
+
+	private static String resolveScheme(boolean secure, boolean ws) {
+		if (ws) {
+			return secure ? HttpClient.WSS_SCHEME : HttpClient.WS_SCHEME;
+		}
+		else {
+			return secure ? HttpClient.HTTPS_SCHEME : HttpClient.HTTP_SCHEME;
+		}
+	}
+
+	private static boolean isSecureScheme(String scheme) {
+		return HttpClient.HTTPS_SCHEME.equals(scheme) || HttpClient.WSS_SCHEME.equals(scheme);
+	}
+
+	private static String rawUri(URI uri) {
+		String rawPath = uri.getRawPath();
+		if (rawPath == null || rawPath.isEmpty()) {
+			rawPath = ROOT_PATH;
+		}
+		String rawQuery = uri.getRawQuery();
+		if (rawQuery == null) {
+			return rawPath;
+		}
+		return rawPath + '?' + rawQuery;
+	}
+
+	private static String authority(URI uri) {
+		String host = uri.getHost();
+		int port = uri.getPort();
+		if (port == -1 || port == DEFAULT_PORT || port == DEFAULT_SECURE_PORT) {
+			return host;
+		}
+		return host + ':' + port;
 	}
 
 	UriEndpoint redirect(String to) {
@@ -102,90 +168,24 @@ final class UriEndpoint {
 		}
 	}
 
-	private static String toSocketAddressStringWithoutDefaultPort(SocketAddress address, boolean secure) {
-		if (!(address instanceof InetSocketAddress)) {
-			return "localhost";
-		}
-		String addressString = NetUtil.toSocketAddressString((InetSocketAddress) address);
-		if (secure) {
-			if (addressString.endsWith(":443")) {
-				addressString = addressString.substring(0, addressString.length() - 4);
-			}
-		}
-		else {
-			if (addressString.endsWith(":80")) {
-				addressString = addressString.substring(0, addressString.length() - 3);
-			}
-		}
-		return addressString;
-	}
-
-	private static String cleanHostString(String host) {
-		// remove brackets around IPv6 address in host name
-		if (host.charAt(0) == '[' && host.charAt(host.length() - 1) == ']') {
-			host = host.substring(1, host.length() - 1);
-		}
-		return host;
-	}
-
-	private static String resolveScheme(boolean secure, boolean ws) {
-		if (ws) {
-			return secure ? HttpClient.WSS_SCHEME : HttpClient.WS_SCHEME;
-		}
-		else {
-			return secure ? HttpClient.HTTPS_SCHEME : HttpClient.HTTP_SCHEME;
-		}
-	}
-
 	boolean isSecure() {
-		return isSecureScheme(scheme);
+		return secure;
 	}
 
-	static boolean isSecureScheme(String scheme) {
-		return HttpClient.HTTPS_SCHEME.equals(scheme) || HttpClient.WSS_SCHEME.equals(scheme);
-	}
-
-	private void rawPathAndQuery(StringBuilder sb) {
-		String rawPath = uri.getRawPath();
-		if (rawPath == null || rawPath.isEmpty()) {
-			sb.append('/');
-		}
-		else {
-			sb.append(rawPath);
-		}
-		String rawQuery = uri.getRawQuery();
-		if (rawQuery != null) {
-			sb.append('?').append(rawQuery);
-		}
-	}
-
-	String getRawPathAndQuery() {
-		StringBuilder sb = new StringBuilder();
-		rawPathAndQuery(sb);
-		return sb.toString();
+	String getRawUri() {
+		return rawUri;
 	}
 
 	String getPath() {
 		String path = uri.getPath();
 		if (path == null || path.isEmpty()) {
-			return "/";
+			return ROOT_PATH;
 		}
 		return path;
 	}
 
-	String getHostNameHeaderValue() {
-		if (remoteAddress instanceof InetSocketAddress) {
-			InetSocketAddress address = (InetSocketAddress) remoteAddress;
-			String host = HttpUtil.formatHostnameForHttp(address);
-			int port = address.getPort();
-			if (port != 80 && port != 443) {
-				host = host + ':' + port;
-			}
-			return host;
-		}
-		else {
-			return "localhost";
-		}
+	String getHostHeader() {
+		return authority;
 	}
 
 	SocketAddress getRemoteAddress() {
@@ -193,12 +193,7 @@ final class UriEndpoint {
 	}
 
 	String toExternalForm() {
-		StringBuilder sb = new StringBuilder();
-		sb.append(scheme);
-		sb.append("://");
-		sb.append(toSocketAddressStringWithoutDefaultPort(remoteAddress, isSecure()));
-		rawPathAndQuery(sb);
-		return sb.toString();
+		return scheme + COLON_DOUBLE_SLASH + authority + rawUri;
 	}
 
 	@Override

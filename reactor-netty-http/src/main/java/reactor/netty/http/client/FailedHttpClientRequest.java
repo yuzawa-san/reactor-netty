@@ -146,7 +146,7 @@ final class FailedHttpClientRequest implements HttpClientRequest {
 
 	@Override
 	public String uri() {
-		return uriEndpoint.getRawPathAndQuery();
+		return uriEndpoint.getRawUri();
 	}
 
 	@Override

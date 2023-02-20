@@ -1608,4 +1608,8 @@ public abstract class HttpClient extends ClientTransport<HttpClient, HttpClientC
 	static final String WS_SCHEME = "ws";
 
 	static final String WSS_SCHEME = "wss";
+
+	static final int DEFAULT_PORT = 80;
+
+	static final int DEFAULT_SECURE_PORT = 443;
 }

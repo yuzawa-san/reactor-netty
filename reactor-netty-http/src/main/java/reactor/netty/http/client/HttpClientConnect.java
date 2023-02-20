@@ -501,7 +501,7 @@ class HttpClientConnect extends HttpClient {
 				ch.responseTimeout = responseTimeout;
 
 				HttpHeaders headers = ch.getNettyRequest()
-				                        .setUri(uriEndpoint.getRawPathAndQuery())
+				                        .setUri(uriEndpoint.getRawUri())
 				                        .setMethod(method)
 				                        .setProtocolVersion(HttpVersion.HTTP_1_1)
 				                        .headers();
@@ -515,7 +515,7 @@ class HttpClientConnect extends HttpClient {
 				}
 
 				if (!headers.contains(HttpHeaderNames.HOST)) {
-					headers.set(HttpHeaderNames.HOST, uriEndpoint.getHostNameHeaderValue());
+					headers.set(HttpHeaderNames.HOST, uriEndpoint.getHostHeader());
 				}
 
 				if (!headers.contains(HttpHeaderNames.ACCEPT)) {

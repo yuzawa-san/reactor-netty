@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.netty.transport.AddressUtils;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -143,10 +145,10 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 80));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 80));
 	}
 
 	@Test
@@ -155,10 +157,10 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com:8080/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com:8080");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com:8080");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 8080));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 8080));
 	}
 
 	@Test
@@ -167,10 +169,10 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("http://example.com:8080/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("http://example.com:8080/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com:8080");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com:8080");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 8080));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 8080));
 	}
 
 	@Test
@@ -179,10 +181,10 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("http://127.0.0.1:8080/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("127.0.0.1:8080");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("127.0.0.1:8080");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("127.0.0.1", 8080));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("127.0.0.1", 8080));
 	}
 
 	@Test
@@ -191,10 +193,10 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("http://[::1]:8080/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("[::1]:8080");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("[::1]:8080");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("::1", 8080));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("::1", 8080));
 	}
 
 	@Test
@@ -205,10 +207,10 @@ class UriEndpointFactoryTest {
 		endpoint = endpoint.redirect("https://example.com/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
 	}
 
 	@Test
@@ -219,10 +221,10 @@ class UriEndpointFactoryTest {
 		endpoint = endpoint.redirect("/path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com");
+		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
 	}
 
 	@Test
@@ -233,10 +235,10 @@ class UriEndpointFactoryTest {
 		endpoint = endpoint.redirect("path%20example?key=value#fragment");
 
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/subpath/path%20example?key=value");
-		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
-		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/subpath/path%20example?key=value");
+		assertThat(endpoint.getHostHeader()).isEqualTo("example.com");
+		assertThat(endpoint.getRawUri()).isEqualTo("/subpath/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/subpath/path example");
-		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
+		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
 	}
 
 	@Test
@@ -462,7 +464,7 @@ class UriEndpointFactoryTest {
 
 		private  final class UriEndpointFactory {
 			InetSocketAddress remoteAddress() {
-				return InetSocketAddress.createUnresolved(host, port != -1 ? port : (secure ? 443 : 80));
+				return AddressUtils.createUnresolved(host, port != -1 ? port : (secure ? 443 : 80));
 			}
 
 			UriEndpoint createUriEndpoint(String uri) {
