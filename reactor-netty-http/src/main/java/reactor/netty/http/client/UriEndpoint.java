@@ -48,11 +48,11 @@ final class UriEndpoint {
 
 	private UriEndpoint(URI uri, SocketAddress remoteAddress) {
 		this.uri = Objects.requireNonNull(uri, "uri");
+		if (uri.isOpaque()) {
+			throw new IllegalArgumentException("URI is opaque: " + uri);
+		}
 		if (!uri.isAbsolute()) {
 			throw new IllegalArgumentException("URI is not absolute: " + uri);
-		}
-		if (uri.getHost() == null) {
-			throw new IllegalArgumentException("Host is not specified");
 		}
 		this.scheme = uri.getScheme().toLowerCase();
 		this.secure = isSecureScheme(scheme);

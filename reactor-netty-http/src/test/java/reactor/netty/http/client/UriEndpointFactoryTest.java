@@ -140,6 +140,12 @@ class UriEndpointFactoryTest {
 	}
 
 	@Test
+	void createUriEndpointOpaque() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+		.isThrownBy(() -> externalForm(this.builder.build(), "mailto:admin@example.com", true));
+	}
+
+	@Test
 	void createUriEndpointFqdn_1() {
 		UriEndpoint endpoint = this.builder.host("example.com").build()
 				.createUriEndpoint("/path%20example?key=value#fragment");
@@ -149,6 +155,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 80));
+		assertThat(endpoint.isSecure()).isFalse();
 	}
 
 	@Test
@@ -161,6 +168,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 8080));
+		assertThat(endpoint.isSecure()).isFalse();
 	}
 
 	@Test
@@ -173,6 +181,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 8080));
+		assertThat(endpoint.isSecure()).isFalse();
 	}
 
 	@Test
@@ -185,6 +194,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("127.0.0.1", 8080));
+		assertThat(endpoint.isSecure()).isFalse();
 	}
 
 	@Test
@@ -197,6 +207,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("::1", 8080));
+		assertThat(endpoint.isSecure()).isFalse();
 	}
 
 	@Test
@@ -211,6 +222,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
+		assertThat(endpoint.isSecure()).isTrue();
 	}
 
 	@Test
@@ -225,6 +237,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
+		assertThat(endpoint.isSecure()).isTrue();
 	}
 
 	@Test
@@ -239,6 +252,16 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getRawUri()).isEqualTo("/subpath/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/subpath/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(AddressUtils.createUnresolved("example.com", 443));
+		assertThat(endpoint.isSecure()).isTrue();
+	}
+
+	@Test
+	void createUriEndpointRedirectInvalid() throws UnknownHostException {
+		UriEndpoint endpoint = this.builder.build()
+				.createUriEndpoint("https://example.com/");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+		.isThrownBy(() -> endpoint.redirect("path${MACRO_IS_INVALID}/test@@@@"));
 	}
 
 	@Test
