@@ -15,7 +15,6 @@
  */
 package reactor.netty.http.client;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -161,7 +160,7 @@ class UriEndpointFactoryTest {
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 8080));
 	}
-	
+
 	@Test
 	void createUriEndpointFqdn_3() {
 		UriEndpoint endpoint = this.builder.build()
@@ -204,35 +203,35 @@ class UriEndpointFactoryTest {
 				.createUriEndpoint("https://source.example.com/foo/bar");
 
 		endpoint = endpoint.redirect("https://example.com/path%20example?key=value#fragment");
-		
+
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
 		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
 		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
 	}
-	
+
 	@Test
 	void createUriEndpointRedirectRelative() throws UnknownHostException {
 		UriEndpoint endpoint = this.builder.build()
 				.createUriEndpoint("https://example.com/");
 
 		endpoint = endpoint.redirect("/path%20example?key=value#fragment");
-		
+
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/path%20example?key=value");
 		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
 		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/path%20example?key=value");
 		assertThat(endpoint.getPath()).isEqualTo("/path example");
 		assertThat(endpoint.getRemoteAddress()).isEqualTo(InetSocketAddress.createUnresolved("example.com", 443));
 	}
-	
+
 	@Test
 	void createUriEndpointRedirectRelativeSubpath() throws UnknownHostException {
 		UriEndpoint endpoint = this.builder.build()
 				.createUriEndpoint("https://example.com/subpath/");
 
 		endpoint = endpoint.redirect("path%20example?key=value#fragment");
-		
+
 		assertThat(endpoint.toExternalForm()).isEqualTo("https://example.com/subpath/path%20example?key=value");
 		assertThat(endpoint.getHostNameHeaderValue()).isEqualTo("example.com");
 		assertThat(endpoint.getRawPathAndQuery()).isEqualTo("/subpath/path%20example?key=value");

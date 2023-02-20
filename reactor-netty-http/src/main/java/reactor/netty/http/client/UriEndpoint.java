@@ -60,6 +60,7 @@ final class UriEndpoint {
 
 	static UriEndpoint create(URI uri, String baseUrl, String uriStr, Supplier<? extends SocketAddress> remoteAddress, boolean secure, boolean ws) {
 		if (uri != null) {
+			// fast path
 			return new UriEndpoint(uri);
 		}
 		if (uriStr == null) {
@@ -101,12 +102,12 @@ final class UriEndpoint {
 		}
 	}
 
-	private static String toSocketAddressStringWithoutDefaultPort(SocketAddress address, boolean defaultSecure) {
+	private static String toSocketAddressStringWithoutDefaultPort(SocketAddress address, boolean secure) {
 		if (!(address instanceof InetSocketAddress)) {
 			return "localhost";
 		}
 		String addressString = NetUtil.toSocketAddressString((InetSocketAddress) address);
-		if (defaultSecure) {
+		if (secure) {
 			if (addressString.endsWith(":443")) {
 				addressString = addressString.substring(0, addressString.length() - 4);
 			}
